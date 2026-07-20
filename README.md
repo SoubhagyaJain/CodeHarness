@@ -1,96 +1,76 @@
-# CodeHarness
+# ⚡ CodeHarness
 
-## Overview
+> **The gap between your agent and Claude Code isn't the model — it's the harness.**
 
-`CodeHarness` is a small Python repository built around a CrewAI-style code harness. It demonstrates a simple bank account implementation with a test suite and a harness script that can run, inspect, and repair the repository using an agent-driven workflow.
+CodeHarness is an open-source project that rebuilds the architecture of popular coding agents (like Claude Code) from scratch. It demonstrates a fully autonomous, agent-driven workflow that explores, edits, tests, and reports on a real codebase. 
 
-The repository includes:
+Instead of a fragile while-loop, CodeHarness implements a robust 6-layer architecture using [CrewAI](https://docs.crewai.com/) for orchestration and [E2B](https://e2b.dev/) for secure, sandboxed execution.
 
-- `code_harness.py` — a CrewAI-based harness that configures model, tools, and sandboxed testing.
-- `Workspace/account.py` — a minimal `BankAccount` class with deposit, withdraw, and transfer operations.
-- `Workspace/tests/test_account.py` — a pytest suite targeting the bank account behavior.
-- `pyproject.toml` — project metadata and dependencies.
-- `env.example` — environment variable templates used by the harness.
+---
 
-## Purpose
+## 🏗️ The 6-Layer Architecture
 
-This repo is designed as a code-debugging and test-driven exercise. The core task is to fix bugs in `Workspace/account.py` so that the test suite in `Workspace/tests/` passes.
+1. **Core Loop**: The basic Task → Tool → Result cycle driven by CrewAI.
+2. **Tools**: Native access to read/write files and execute sandboxed shell commands.
+3. **Planning**: A roadmap generated before coding to prevent "context rot" (`planning=True`).
+4. **Subagents**: A Manager delegates to specialists (Explorer, Coder, Tester) to save context space.
+5. **Sandboxing**: Code and tests execute inside an isolated E2B virtual machine.
+6. **Memory & Checkpointing**: Persists facts across sessions and survives interruptions.
 
-## Requirements
+---
 
-- Python 3.11 or newer
-- `pip` for installing dependencies
-- Optional: CrewAI and E2B sandbox access for running the harness as intended
+## 🚀 Quick Start
 
-## Setup
+### 1. Prerequisites
+- Python 3.11+
+- API Keys for **OpenRouter** (or any LLM provider), **OpenAI** (for embeddings/memory), and **E2B** (for sandboxing).
 
-1. Create and activate a virtual environment:
+### 2. Installation
+Clone the repository and set up your environment:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-2. Install project dependencies:
-
-```powershell
 pip install -r requirements.txt
 ```
+*(Alternatively, use `pip install crewai[tools,litellm] crewai-tools[e2b] python-dotenv pytest`)*
 
-or, if using Poetry / PEP 621 / `pyproject.toml`:
-
-```powershell
-pip install crewai[tools,litellm] crewai-tools[e2b] python-dotenv pytest
-```
-
-3. Copy the environment template and provide API keys as needed:
-
+### 3. Configuration
+Copy the environment template and add your API keys:
 ```powershell
 copy env.example .env
 ```
+Edit `.env` with your keys:
+- `MODEL="openrouter/anthropic/claude-sonnet-4-6"` (or your preferred model)
+- `OPENROUTER_API_KEY="..."`
+- `E2B_API_KEY="..."`
+- `OPENAI_API_KEY="..."`
 
-4. Edit `.env` and set values for:
+---
 
-- `MODEL` — the model string used by CrewAI
-- `OPENROUTER_API_KEY` — required for model access if using OpenRouter
-- `E2B_API_KEY` — required to enable sandbox tools and tests inside the harness
-- `OPENAI_API_KEY` — required by CrewAI memory if memory is enabled
+## 🛠️ The Demo Task
 
-## Running Tests
+The `Workspace/` directory contains a minimal banking app (`account.py`) and a test suite (`tests/test_account.py`).
 
-From the repository root, run:
+**The Problem:** The code currently has 2 hidden bugs, resulting in 3 failing tests and 2 passing tests.
+- Withdrawals can overdraw an account past zero.
+- Transfers do not properly credit the recipient's account.
 
-```powershell
-pytest Workspace/tests/ -q
-```
-
-This will execute the bank account unit tests and report pass/fail status.
-
-## Running the Harness
-
-The harness is intended to coordinate agents and sandboxed tools. Run it from the repository root:
-
+**The Solution:** Run the harness.
 ```powershell
 python code_harness.py
 ```
+Watch as the AI Engineering Lead delegates to the Explorer to read the code, the Coder to implement the fixes, and the Tester to run `pytest` inside the E2B sandbox. The agent will iterate until all 5 tests pass, without hallucinating or modifying the test files.
 
-The harness reads the object code from `Workspace/`, applies the configured model and tools, and can run the test suite inside an isolated environment.
+---
 
-## Project Structure
+## 📂 Project Structure
 
-- `code_harness.py` — harness entrypoint and CrewAI orchestration logic
-- `Workspace/account.py` — bank account implementation
-- `Workspace/tests/test_account.py` — pytest tests covering deposit, withdrawal, overdraft protection, and transfers
-- `pyproject.toml` — package metadata and dependencies
-- `env.example` — sample environment variables for model and sandbox configuration
+- `code_harness.py` — The core 6-layer harness and CrewAI orchestration logic.
+- `Workspace/account.py` — The buggy banking implementation.
+- `Workspace/tests/test_account.py` — The pytest test suite.
+- `env.example` — Configuration template.
+- `pyproject.toml` — Package metadata.
 
-## Notes
-
-- The current test suite identifies two important banking behaviors:
-  - Withdrawals should raise `InsufficientFunds` when the requested amount exceeds the balance.
-  - Transfers should move money from one account into the recipient account.
-- The harness is designed to avoid editing tests: only implementation code should be changed to fix failing behavior.
-
-## License
-
-This repository does not include a license file. Add one if you want to make the project open source.
+## 🛡️ Safety First
+If you are building agents, remember: **Prompts are not safeguards. Sandboxes are.** CodeHarness forces all untrusted code execution through E2B, ensuring your host machine remains secure while the agent tests its code.
