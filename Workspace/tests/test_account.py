@@ -1,5 +1,5 @@
 import pytest
-from account import BankAccount, InsufficientFunds
+from Workspace.account import BankAccount, InsufficientFunds
 
 
 def test_deposit_increases_balance():

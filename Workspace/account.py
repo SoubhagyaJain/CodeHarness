@@ -20,9 +20,15 @@ class BankAccount:
     def withdraw(self, amount):
         if amount <= 0:
             raise ValueError("amount must be positive")
+        if amount > self.balance:
+            raise InsufficientFunds("insufficient funds")
         self.balance -= amount
         self.history.append(("withdraw", amount))
 
     def transfer(self, other, amount):
+        if amount <= 0:
+            raise ValueError("amount must be positive")
         self.withdraw(amount)
-        self.deposit(amount)
+        other.deposit(amount)
+        self.history.append(("transfer", amount, other.owner))
+        other.history.append(("received", amount, self.owner))
