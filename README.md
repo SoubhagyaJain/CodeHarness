@@ -19,21 +19,28 @@ Instead of a fragile while-loop, CodeHarness implements a robust 6-layer archite
 
 ---
 
+## 📖 Interactive Notes & Interview Guide
+
+Want to understand this project without reading the code? Preparing for a MAANG System Design interview? 
+Open [interactive_notes.html](./interactive_notes.html) in your browser! 
+It features a beginner-friendly analogy of the multi-agent system and advanced interview questions/answers covering LLM orchestration, security, and context management.
+
+---
+
 ## 🚀 Quick Start
 
 ### 1. Prerequisites
 - Python 3.11+
+- [uv](https://docs.astral.sh/uv/) package manager (recommended for fast installation)
 - API Keys for **OpenRouter** (or any LLM provider), **OpenAI** (for embeddings/memory), and **E2B** (for sandboxing).
 
 ### 2. Installation
-Clone the repository and set up your environment:
+Clone the repository and set up your environment using `uv`:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+uv sync
 ```
-*(Alternatively, use `pip install crewai[tools,litellm] crewai-tools[e2b] python-dotenv pytest`)*
+*(Alternatively, use `pip install crewai[tools,litellm] crewai-tools[e2b] python-dotenv pytest` if you prefer pip)*
 
 ### 3. Configuration
 Copy the environment template and add your API keys:
@@ -58,7 +65,7 @@ The `Workspace/` directory contains a minimal banking app (`account.py`) and a t
 
 **The Solution:** Run the harness.
 ```powershell
-python code_harness.py
+uv run python code_harness.py
 ```
 Watch as the AI Engineering Lead delegates to the Explorer to read the code, the Coder to implement the fixes, and the Tester to run `pytest` inside the E2B sandbox. The agent will iterate until all 5 tests pass, without hallucinating or modifying the test files.
 
@@ -67,10 +74,12 @@ Watch as the AI Engineering Lead delegates to the Explorer to read the code, the
 ## 📂 Project Structure
 
 - `code_harness.py` — The core 6-layer harness and CrewAI orchestration logic.
+- `interactive_notes.html` — An interactive UI guide for beginners and MAANG interview prep.
 - `Workspace/account.py` — The buggy banking implementation.
 - `Workspace/tests/test_account.py` — The pytest test suite.
 - `env.example` — Configuration template.
-- `pyproject.toml` — Package metadata.
+- `pyproject.toml` & `uv.lock` — Package metadata and lockfile.
 
 ## 🛡️ Safety First
-If you are building agents, remember: **Prompts are not safeguards. Sandboxes are.** CodeHarness forces all untrusted code execution through E2B, ensuring your host machine remains secure while the agent tests its code.
+If you are building agents, remember: **Prompts are not safeguards. Sandboxes and Interceptors are.** 
+CodeHarness forces all untrusted code execution through E2B, ensuring your host machine remains secure while the agent tests its code. Furthermore, it employs a **Human-in-the-Loop hook** (`@before_tool_call`) that requires your explicit approval on stdin before any file writes or sandbox executions. If denied, it uses a deterministic `HookAborted` exception to halt the agent immediately, ensuring safety is enforced outside the LLM.
