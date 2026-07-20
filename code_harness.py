@@ -154,7 +154,7 @@ task = Task(
 # it's constrained to `pytest {path} -q`, which is narrower than the raw
 # E2BExecTool it wraps, but it still executes inside the sandbox, so it goes
 # through the same approval gate as everything else that does.
-from crewai.hooks import before_tool_call
+from crewai.hooks import before_tool_call, HookAborted
 
 GATED_TOOLS = {write_file.name, "run_tests", *(t.name for t in sandbox_tools)}
 
@@ -170,7 +170,7 @@ def require_approval(context):
             f"Approve {context.tool_name} with input {context.tool_input}? [yes/no] "
         )
         if response.strip().lower() != "yes":
-            return False  # blocks the call; the agent is told it was denied
+            raise HookAborted(reason="User denied tool execution", source="require_approval")
     return None
 
 # 8) CHECKPOINTING (survive an interruption, resume without redoing work) ----
