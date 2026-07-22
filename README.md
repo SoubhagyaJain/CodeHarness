@@ -1,37 +1,52 @@
-# CodeHarness
+# ⚡ CodeHarness
 
-CodeHarness is a Python-based orchestration layer for building coding agents that can inspect a repository, plan changes, edit files, and validate results through tests. It combines a Streamlit chat interface with a structured multi-agent workflow so you can interact with the system in a more guided, transparent way.
+CodeHarness is a Python-based project for building and experimenting with coding agents that can inspect a codebase, plan changes, edit files, and validate their work through tests. It brings together a Streamlit interface and a modular Python package so you can interact with an agent workflow in a clear, guided, and transparent way.
 
-## Why this project exists
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11%2B-blue" alt="Python 3.11+" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+  <img src="https://img.shields.io/badge/Status-Active-success" alt="Active" />
+</p>
 
-The goal is simple: make it easier to experiment with autonomous coding workflows without surrendering control. The project focuses on:
+---
 
-- clear agent roles for exploration, coding, and QA
-- a local execution model for safer testing
-- a user-friendly interface for monitoring progress
-- a structure that is easy to extend as your agent workflow grows
+## 🌟 What this project does
 
-## Key features
+CodeHarness is designed for developers and researchers who want to explore autonomous coding workflows without giving up control. The project focuses on:
 
-- Streamlit-based chat UI for interactive use
-- modular Python package layout under src/codeharness
-- local subprocess-based execution for testing and validation
-- support for multiple model providers through lightweight integrations
+- clear agent roles for exploration, coding, and validation
+- a safer local testing workflow
+- a simple chat-based interface for interacting with the system
+- a structure that is easy to extend for experiments and custom agents
+
+---
+
+## ✨ Features
+
+- Streamlit-based chat UI
+- modular package layout under src/codeharness
+- orchestration logic for agent-based workflows
 - workspace-aware execution for repository changes
+- environment-based configuration for providers and credentials
 
-## Quick start
+---
 
-### Prerequisites
+## ✅ Requirements
 
-- Python 3.11+
+Before installing, make sure you have:
+
+- Python 3.11 or newer
 - pip or uv
-- a valid API key for your chosen provider
+- an API key for your chosen model provider
+
+---
+
+## 🚀 Installation
 
 ### Option 1: using uv
 
 ```powershell
 uv sync
-uv run streamlit run src/codeharness/ui/app.py
 ```
 
 ### Option 2: using pip
@@ -40,17 +55,40 @@ uv run streamlit run src/codeharness/ui/app.py
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e .
+```
+
+---
+
+## 🔧 Configuration
+
+1. Copy the example environment file:
+
+```powershell
+copy env.example .env
+```
+
+2. Open the .env file and fill in the required values.
+3. Add your provider credentials and any model settings required by your setup.
+
+---
+
+## ▶️ Running the app
+
+Start the Streamlit interface with:
+
+```powershell
 streamlit run src/codeharness/ui/app.py
 ```
 
-### Configure the app
+If you are using uv, you can run the same app with:
 
-1. Open the Streamlit UI in your browser.
-2. Choose your preferred model provider.
-3. Enter your API key in the interface.
-4. Paste a GitHub issue or task description to start the workflow.
+```powershell
+uv run streamlit run src/codeharness/ui/app.py
+```
 
-## Project structure
+---
+
+## 📁 Project structure
 
 ```text
 CodeHarness/
@@ -64,25 +102,42 @@ CodeHarness/
 │           └── assets/
 ├── Workspace/
 ├── docs/
+├── tests/
 ├── pyproject.toml
 ├── README.md
 └── env.example
 ```
 
-## Development workflow
+---
 
-- Use the package entry points from src/codeharness for core logic.
-- Keep UI changes under src/codeharness/ui.
-- Keep agent behavior and orchestration logic in src/codeharness/core.
-- Add or update tests in the relevant module area as the project evolves.
+## 🛠️ Development workflow
 
-For a longer development guide, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+- Keep orchestration logic in src/codeharness/core
+- Keep the UI layer in src/codeharness/ui
+- Add tests for new behavior whenever possible
+- Update documentation when setup or behavior changes
 
-## Safety notes
+For more detailed development notes, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
-This project is designed to keep execution more controlled than a fully unrestricted agent loop. The workflow uses isolated execution paths and human review checkpoints to reduce the risk of unintended actions.
+---
 
-## Contributing
+## 🧪 Testing
 
-Contributions are welcome. If you want to improve the architecture, documentation, or workflow behavior, open an issue or submit a pull request with a clear explanation of the change.
+Run the test suite locally with:
+
+```powershell
+pytest tests/test_smoke.py Workspace/tests -q
+```
+
+---
+
+## 🛡️ Safety notes
+
+This project is intended to be more controlled than a fully unrestricted agent loop. It uses isolated execution paths and review checkpoints to reduce the risk of unintended actions.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome. If you want to improve the workflow, documentation, or architecture, open an issue or submit a pull request with a clear explanation of the change.
 
