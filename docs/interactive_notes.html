@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rebuilding Claude Code's Harness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f3f0ea;
+            --text-main: #181818;
+            --text-muted: #5a5a5a;
+            --accent: #181818;
+            --border-color: #dcd7ce;
+            --card-bg: #ffffff;
+            
+            --font-serif: 'Playfair Display', serif;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            
+            --easing-premium: cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: var(--font-sans); background-color: var(--bg-color); color: var(--text-main); line-height: 1.7; overflow-x: hidden; position: relative; }
+
+        /* Faint Parallax Watermarks */
+        .watermark { position: fixed; font-family: var(--font-serif); font-style: italic; color: var(--text-main); opacity: 0.03; z-index: -1; pointer-events: none; transition: transform 0.1s ease-out; }
+        .watermark-s { top: -10%; right: -10%; font-size: 80vw; }
+        .watermark-c { bottom: -20%; left: -10%; font-size: 60vw; }
+
+        .container { max-width: 1300px; margin: 0 auto; padding: 4rem 2rem; position: relative; }
+
+        .hero-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; margin-bottom: 5rem; min-height: 80vh; }
+
+        .author-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 4rem; opacity: 0; animation: fadeUp 1s var(--easing-premium) 0.5s forwards; transform: translateY(20px); }
+        .author-avatar { width: 48px; height: 48px; border-radius: 50%; background-image: url('https://ui-avatars.com/api/?name=Soubhagya+Jain&background=181818&color=fff'); background-size: cover; }
+        .author-name { font-family: var(--font-serif); font-style: italic; font-size: 1.25rem; color: var(--text-main); }
+
+        .category-tag { display: inline-block; background-color: var(--accent); color: white; padding: 0.5rem 1.25rem; border-radius: 6px; font-family: var(--font-serif); font-style: italic; font-size: 1.1rem; margin-bottom: 2rem; opacity: 0; transform: scale(0.9); animation: popIn 1s var(--easing-premium) 0.7s forwards; }
+
+        .title-mask { overflow: hidden; display: block; }
+        .title-mask span { display: inline-block; transform: translateY(120%) rotate(3deg); opacity: 0; animation: titleReveal 1.2s var(--easing-premium) forwards; transform-origin: left bottom; }
+        h1 { font-family: var(--font-serif); font-size: 4.5rem; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 1.5rem; }
+
+        .subtitle { font-family: var(--font-serif); font-style: italic; font-size: 1.5rem; color: var(--text-muted); margin-bottom: 3rem; opacity: 0; transform: translateY(20px); animation: fadeUp 1s var(--easing-premium) 1.2s forwards; }
+
+        .hero-diagram { width: 100%; height: auto; max-width: 600px; margin: 0 auto; opacity: 0; animation: fadeUp 1.5s var(--easing-premium) 0.2s forwards; }
+        .diagram-stroke { stroke: var(--text-main); }
+        .diagram-fill { fill: var(--text-main); }
+        .diagram-text { font-family: var(--font-sans); font-size: 12px; fill: var(--text-main); font-weight: 500; opacity: 0; animation: fadeInText 1s ease forwards 2s; }
+        .diagram-bg { fill: var(--bg-color); }
+        .diagram-solid, .diagram-dash { stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: dashDraw 3.5s var(--easing-premium) forwards 0.5s; }
+        .diagram-solid { stroke: var(--text-main); fill: none; stroke-width: 1.5;}
+        .diagram-dash { stroke: var(--text-main); fill: none; }
+
+        @keyframes dashDraw { to { stroke-dashoffset: 0; } }
+        @keyframes fadeInText { to { opacity: 1; } }
+
+        .content-container { max-width: 1100px; }
+
+        .tabs { display: flex; gap: 3rem; margin-bottom: 4rem; border-bottom: 2px solid rgba(0,0,0,0.05); opacity: 0; animation: fadeUp 1s var(--easing-premium) 1.5s forwards; }
+        .tab-btn { background: none; border: none; color: var(--text-muted); font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600; cursor: pointer; padding-bottom: 1rem; position: relative; transition: color 0.3s ease; }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--text-main); font-style: italic; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 2px; background-color: var(--text-main); transform-origin: left; animation: scaleX 0.4s var(--easing-premium) forwards; }
+        
+        .tab-content { display: none; opacity: 0; transform: translateY(20px); }
+        .tab-content.active { display: block; animation: fadeUp 0.6s var(--easing-premium) forwards; }
+
+        .reveal-up { opacity: 0; transform: translateY(50px); transition: opacity 1s var(--easing-premium), transform 1s var(--easing-premium); }
+        .reveal-up.is-visible { opacity: 1; transform: translateY(0); }
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+
+        .reveal-img-container { position: relative; overflow: hidden; border-radius: 8px; }
+        .reveal-img { opacity: 0; transform: scale(1.1); clip-path: polygon(0 0, 100% 0, 100% 0, 0 0); transition: clip-path 1.4s var(--easing-premium), transform 2s var(--easing-premium), opacity 1s ease; }
+        .reveal-img.is-visible { opacity: 1; transform: scale(1); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+
+        .section { margin-bottom: 5rem; }
+        .section h2 { font-family: var(--font-serif); font-size: 2.5rem; margin-bottom: 1.5rem; font-weight: 700; max-width: 800px; }
+        .section p { font-size: 1.15rem; color: var(--text-muted); margin-bottom: 1.5rem; max-width: 800px; }
+        
+        .analogy { border-left: 3px solid var(--accent); padding: 1.5rem 2rem; background-color: rgba(0,0,0, 0.03); margin: 2rem 0; font-family: var(--font-serif); font-size: 1.25rem; font-style: italic; color: var(--text-main); max-width: 800px; position: relative; overflow: hidden; }
+        .analogy::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background-color: var(--accent); transform: scaleY(0); transform-origin: top; transition: transform 1s var(--easing-premium); }
+        .analogy.is-visible::before { transform: scaleY(1); }
+
+        .inline-illustration { width: 100%; max-width: 800px; margin: 3rem 0; padding: 2rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; text-align: center; box-shadow: 0 4px 30px rgba(0,0,0,0.03); transition: transform 0.5s var(--easing-premium), box-shadow 0.5s ease; }
+        .inline-illustration:hover { transform: translateY(-5px); box-shadow: 0 10px 40px rgba(0,0,0,0.06); }
+
+        .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 3rem; }
+        .team-member { background-color: var(--card-bg); padding: 2.5rem; border-radius: 4px; border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 1rem; transition: transform 0.4s var(--easing-premium); }
+        .team-member:hover { transform: translateY(-10px); }
+        .team-icon { width: 50px; height: 50px; }
+        .team-member h3 { font-family: var(--font-serif); font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+
+        .interview-block { display: flex; align-items: center; gap: 4rem; margin-bottom: 8rem; }
+        .interview-block:nth-child(even) { flex-direction: row-reverse; }
+        .interview-image { flex: 1; max-width: 45%; display: flex; justify-content: center; }
+        .interview-image img { width: 100%; height: auto; max-width: 500px; mix-blend-mode: multiply; border-radius: 8px; }
+        
+        @keyframes floatImg { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        .reveal-img.is-visible { animation: floatImg 6s ease-in-out infinite alternate; animation-delay: 1s; }
+
+        .interview-content { flex: 1; }
+        .interview-content h3 { font-family: var(--font-serif); font-size: 2rem; line-height: 1.2; margin-bottom: 1.5rem; color: var(--text-main); }
+        .tag-small { display: inline-block; font-family: var(--font-sans); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--text-muted); border: 1px solid var(--border-color); padding: 0.3rem 0.8rem; border-radius: 99px; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+        .tag-small::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0,0,0,0.05), transparent); transition: left 0.7s ease; }
+        .interview-block:hover .tag-small::after { left: 100%; }
+        .response-label { font-family: var(--font-serif); font-style: italic; font-weight: 600; font-size: 1.2rem; margin-bottom: 0.5rem; color: var(--text-main); }
+
+        /* Workflow Terminal & Pipeline Styles */
+        .terminal-window { background-color: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.2); margin: 3rem 0 5rem 0; font-family: var(--font-mono); max-width: 800px; transform: perspective(1000px) rotateX(2deg); transition: transform 0.5s var(--easing-premium), box-shadow 0.5s var(--easing-premium); border: 1px solid rgba(255,255,255,0.1); }
+        .terminal-window:hover { transform: perspective(1000px) rotateX(0deg); box-shadow: 0 40px 80px rgba(0,0,0,0.3); }
+        .terminal-header { background-color: #2d2d2d; padding: 0.8rem 1rem; display: flex; align-items: center; gap: 0.5rem; position: relative; border-bottom: 1px solid #111; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.red { background-color: #ff5f56; }
+        .dot.yellow { background-color: #ffbd2e; }
+        .dot.green { background-color: #27c93f; }
+        .terminal-title { position: absolute; left: 50%; transform: translateX(-50%); color: #888; font-size: 0.85rem; font-family: var(--font-sans); }
+        .terminal-body { padding: 2.5rem 2rem; color: #f3f0ea; font-size: 1.05rem; line-height: 1.8; }
+        .terminal-body p { margin-bottom: 0.5rem; }
+        .terminal-body .cmd { color: #50fa7b; }
+        .terminal-body .sys { color: #8be9fd; }
+        
+        .type-anim-1 { animation: typeFade 0.1s forwards 0.5s; opacity: 0; }
+        .type-anim-2 { animation: typeFade 0.1s forwards 1.2s; opacity: 0; }
+        .type-anim-3 { animation: typeFade 0.1s forwards 2.0s; opacity: 0; }
+        .type-anim-4 { animation: typeFade 0.1s forwards 2.8s; opacity: 0; }
+        @keyframes typeFade { to { opacity: 1; } }
+
+        .pipeline-container { position: relative; margin: 5rem 0; max-width: 800px; padding-left: 1rem; }
+        .pipeline-container::before { content: ''; position: absolute; left: 34px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--accent), transparent); opacity: 0.2; }
+        .pipeline-step { display: flex; gap: 2.5rem; margin-bottom: 4rem; position: relative; z-index: 1; }
+        .step-number { width: 50px; height: 50px; flex-shrink: 0; border-radius: 50%; background-color: var(--bg-color); border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700; color: var(--accent); box-shadow: 0 0 0 8px var(--bg-color); transition: all 0.4s var(--easing-premium); }
+        .pipeline-step:hover .step-number { background-color: var(--accent); color: var(--bg-color); transform: scale(1.1); box-shadow: 0 0 0 12px rgba(0,0,0,0.05); }
+        .step-content h3 { font-family: var(--font-serif); font-size: 1.8rem; margin-bottom: 0.8rem; padding-top: 0.3rem; }
+        .step-content p { font-size: 1.1rem; color: var(--text-muted); }
+        
+        @keyframes alertPulse { 0% { box-shadow: 0 0 0 8px var(--bg-color), 0 0 0 8px rgba(217, 83, 79, 0.4); } 70% { box-shadow: 0 0 0 8px var(--bg-color), 0 0 0 20px rgba(217, 83, 79, 0); } 100% { box-shadow: 0 0 0 8px var(--bg-color), 0 0 0 0 rgba(217, 83, 79, 0); } }
+        .step-alert .step-number { border-color: #d9534f; color: #d9534f; animation: alertPulse 2.5s infinite; }
+        .step-alert:hover .step-number { background-color: #d9534f; color: white; animation: none; box-shadow: 0 0 0 12px rgba(217,83,79,0.1); }
+
+        /* Example Styles */
+        .example-container { display: flex; align-items: center; gap: 2rem; margin-top: 3rem; }
+        .example-box { flex: 1; border-radius: 12px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.06); border: 1px solid var(--border-color); background: var(--card-bg); transition: transform 0.4s var(--easing-premium); }
+        .example-box:hover { transform: translateY(-8px); box-shadow: 0 25px 50px rgba(0,0,0,0.1); }
+        .example-header { padding: 1rem 1.5rem; font-family: var(--font-sans); font-weight: 700; font-size: 1.1rem; color: #fff; }
+        .example-box.broken .example-header { background-color: #d9534f; }
+        .example-box.fixed .example-header { background-color: #27c93f; }
+        .example-explanation { padding: 1.5rem; font-size: 1.05rem; line-height: 1.6; color: var(--text-main); background: rgba(0,0,0,0.02); border-top: 1px solid var(--border-color); }
+        .example-arrow { color: var(--border-color); flex-shrink: 0; transition: transform 0.4s ease; }
+        .example-container:hover .example-arrow { color: var(--accent); transform: scale(1.2); }
+
+        /* Password Screen Styles */
+        .password-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; }
+        .password-screen h3 { font-family: var(--font-serif); font-size: 2rem; margin-bottom: 1rem; }
+        .password-screen p { color: var(--text-muted); margin-bottom: 2rem; }
+        .password-input-group { display: flex; gap: 1rem; }
+        .password-input { background: transparent; border: 1px solid var(--border-color); padding: 1rem 1.5rem; font-family: var(--font-sans); font-size: 1rem; border-radius: 8px; outline: none; transition: border-color 0.3s ease; width: 300px; color: var(--text-main); }
+        .password-input:focus { border-color: var(--text-main); }
+        .password-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 0 2rem; border-radius: 8px; font-family: var(--font-serif); font-style: italic; font-size: 1.1rem; cursor: pointer; transition: transform 0.3s ease; }
+        .password-btn:hover { transform: scale(1.05); }
+        .password-error { color: #d9534f; margin-top: 1rem; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s ease; }
+        .password-error.visible { opacity: 1; }
+
+        /* Tech Stack Styles */
+        .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2rem; margin-top: 3rem; }
+        .tech-card { background-color: #181818; padding: 2.5rem 2rem; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: flex-start; gap: 1rem; position: relative; overflow: hidden; opacity: 0; transform: translateY(40px) scale(0.95); transition: transform 0.5s var(--easing-premium), box-shadow 0.5s var(--easing-premium); border: 1px solid rgba(255,255,255,0.1); color: #f3f0ea; }
+        .tech-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent); transition: left 0.8s ease; }
+        .tech-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 30px 60px rgba(0,0,0,0.3); }
+        .tech-card:hover::before { left: 100%; }
+        .tech-card.is-visible { animation: popUpTech 0.8s var(--easing-premium) forwards; }
+        .tech-delay-1 { animation-delay: 0.15s; }
+        .tech-delay-2 { animation-delay: 0.3s; }
+        .tech-delay-3 { animation-delay: 0.45s; }
+        @keyframes popUpTech { to { opacity: 1; transform: translateY(0) scale(1); } }
+        
+        .tech-icon { font-size: 2.8rem; line-height: 1; margin-bottom: 0.5rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
+        .tech-card h3 { font-family: var(--font-sans); font-weight: 700; font-size: 1.5rem; letter-spacing: -0.03em; color: #ffffff; margin-bottom: 0; border: none; padding-bottom: 0;}
+        .tech-card p { font-size: 0.95rem; line-height: 1.6; color: #a0a0a0; margin: 0; }
+
+        /* Documentation Tab Styles */
+        .layer-list { list-style: none; counter-reset: layer; margin-top: 2rem; }
+        .layer-item { position: relative; padding-left: 4rem; margin-bottom: 2rem; }
+        .layer-item::before {
+            counter-increment: layer; content: counter(layer); position: absolute; left: 0; top: 0;
+            width: 2.5rem; height: 2.5rem; border-radius: 50%; background-color: var(--accent);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-serif); font-weight: 700; font-size: 1.2rem;
+        }
+        .layer-item h3 { font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-main); }
+        .layer-item p { margin-bottom: 0; }
+        
+        .code-block {
+            background-color: #1a1a1a; color: #e5e5e5; padding: 1.5rem; border-radius: 8px;
+            font-family: var(--font-mono); font-size: 0.95rem; overflow-x: auto; margin: 1.5rem 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .code-block code { color: #f3f0ea; }
+        .code-block .comment { color: #888; font-style: italic; }
+
+        .swipe-indicator { position: fixed; bottom: 3rem; left: 3rem; display: flex; align-items: center; gap: 1rem; font-family: var(--font-serif); font-size: 1.25rem; font-style: italic; color: var(--text-main); z-index: 10; opacity: 0; animation: fadeUp 1s var(--easing-premium) 2s forwards; }
+        .swipe-icon { width: 40px; height: 40px; border: 1px solid var(--text-main); border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: swipePulse 2s infinite ease-in-out; }
+
+        @keyframes titleReveal { to { transform: translateY(0) rotate(0); opacity: 1; } }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { to { opacity: 1; transform: scale(1); } }
+        @keyframes scaleX { to { transform: scaleX(1); } }
+        @keyframes swipePulse { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+
+        @media (max-width: 1000px) {
+            .hero-layout { grid-template-columns: 1fr; gap: 3rem; min-height: auto; padding-top: 1rem;}
+            h1 { font-size: 3.8rem; }
+            .hero-diagram { max-width: 450px; margin: 0 auto; }
+            .interview-block, .interview-block:nth-child(even) { flex-direction: column; gap: 2.5rem; margin-bottom: 5rem; }
+            .interview-image { max-width: 90%; }
+        }
+        
+        @media (max-width: 768px) {
+            .container { padding: 3rem 1.5rem; }
+            .swipe-indicator { display: none; }
+            .tabs { flex-direction: row; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 3rem; }
+            .tab-btn { font-size: 1.2rem; }
+            .author-top { margin-bottom: 2.5rem; }
+            .section { margin-bottom: 4rem; }
+            .section h2 { font-size: 2rem; margin-bottom: 1rem; }
+            .section p { font-size: 1.05rem; }
+            .watermark-s { font-size: 120vw; opacity: 0.015; }
+            .watermark-c { font-size: 100vw; opacity: 0.015; }
+            .analogy { font-size: 1.1rem; padding: 1.2rem 1.5rem; margin: 1.5rem 0; }
+            
+            .example-container { flex-direction: column; }
+            .example-arrow { transform: rotate(90deg); }
+            .example-container:hover .example-arrow { transform: rotate(90deg) scale(1.2); }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 2rem 1.2rem; }
+            h1 { font-size: 2.5rem; }
+            .subtitle { font-size: 1.15rem; margin-bottom: 2rem; }
+            .interview-content h3 { font-size: 1.5rem; margin-bottom: 1rem; }
+            .author-large { font-size: 1.5rem; }
+            .category-tag { font-size: 0.9rem; padding: 0.4rem 1rem; margin-bottom: 1.5rem; }
+            .tab-btn { font-size: 1.1rem; padding-bottom: 0.5rem; }
+            .team-member { padding: 1.5rem; }
+            .team-member h3 { font-size: 1.3rem; }
+            .inline-illustration { padding: 1rem; margin: 2rem 0; }
+            .layer-item { padding-left: 3rem; }
+            .layer-item::before { width: 2rem; height: 2rem; font-size: 1rem; }
+            .code-block { font-size: 0.85rem; padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="watermark watermark-s" id="wm1">S</div>
+    <div class="watermark watermark-c" id="wm2">C</div>
+
+    <div class="container">
+        
+        <div class="hero-layout">
+            <div class="hero-content">
+                <div class="author-top">
+                    <div class="author-avatar"></div>
+                    <div class="author-name">Soubhagya Jain</div>
+                </div>
+
+                <div class="category-tag">AI Engineering Deep Dive</div>
+
+                <h1>
+                    <span class="title-mask"><span style="animation-delay: 0.8s;">Rebuilding</span></span>
+                    <span class="title-mask"><span style="animation-delay: 0.9s;">Claude Code's</span></span>
+                    <span class="title-mask"><span style="animation-delay: 1.0s;">Harness</span></span>
+                </h1>
+                
+                <p class="subtitle">The gap between your agent and Claude Code isn't the model — it's the harness.</p>
+            </div>
+            
+            <div class="hero-diagram">
+                <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                    <defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="diagram-fill"/></marker></defs>
+                    <circle cx="250" cy="250" r="180" class="diagram-dash" opacity="0.3"/>
+                    <circle cx="250" cy="250" r="120" class="diagram-dash" opacity="0.5"/>
+                    <circle cx="250" cy="250" r="230" class="diagram-dash" opacity="0.15"/>
+                    <path d="M 250 250 L 350 150" class="diagram-dash" />
+                    <path d="M 250 250 L 150 350" class="diagram-dash" />
+                    <path d="M 250 250 L 120 180" class="diagram-dash" />
+                    <path d="M 250 250 L 380 250" class="diagram-dash" />
+                    <path d="M 250 250 L 320 380" class="diagram-dash" />
+                    <path d="M 250 250 L 250 80" class="diagram-dash" />
+                    
+                    <circle cx="250" cy="250" r="45" class="diagram-solid" fill="var(--bg-color)" />
+                    <text x="250" y="240" font-family="'Playfair Display', serif" font-size="30" font-weight="bold" fill="var(--text-main)" text-anchor="middle" class="diagram-text">M</text>
+                    <path d="M 235 242 L 243 252 L 250 245 L 257 252 L 265 242" class="diagram-solid" />
+                    <text x="250" y="275" class="diagram-text" font-weight="600" text-anchor="middle">Harness</text>
+
+                    <circle cx="250" cy="80" r="22" class="diagram-solid" fill="var(--bg-color)" />
+                    <rect x="242" y="70" width="16" height="20" rx="2" class="diagram-solid" />
+                    <text x="250" y="45" class="diagram-text" text-anchor="middle">Working Context</text>
+
+                    <circle cx="380" cy="250" r="25" class="diagram-solid" fill="var(--bg-color)" />
+                    <path d="M375,245 C370,245 370,255 375,255 C375,260 385,260 385,255 C390,255 390,245 385,245 C385,240 375,240 375,245" class="diagram-solid" />
+                    <text x="380" y="295" class="diagram-text" text-anchor="middle">Memory</text>
+
+                    <circle cx="120" cy="180" r="22" class="diagram-solid" fill="var(--bg-color)" />
+                    <circle cx="120" cy="180" r="8" class="diagram-solid" />
+                    <text x="120" y="220" class="diagram-text" text-anchor="middle">Skills</text>
+
+                    <circle cx="150" cy="350" r="25" class="diagram-solid" fill="var(--bg-color)" />
+                    <rect x="135" y="340" width="30" height="20" rx="2" class="diagram-solid" />
+                    <text x="150" y="395" class="diagram-text" text-anchor="middle">Sandbox</text>
+
+                    <circle cx="320" cy="380" r="22" class="diagram-solid" fill="var(--bg-color)" />
+                    <path d="M 310 372 L 320 368 L 330 372 L 330 380 C 330 388 320 392 320 392 C 320 392 310 388 310 380 Z" class="diagram-solid" />
+                    <text x="320" y="420" class="diagram-text" text-anchor="middle">Protocols</text>
+                    
+                    <circle cx="330" cy="160" r="16" class="diagram-solid" fill="var(--bg-color)"/>
+                    <text x="345" y="140" class="diagram-text" font-size="10">Sub-Agents</text>
+
+                    <circle cx="440" cy="320" r="18" class="diagram-solid" fill="var(--bg-color)"/>
+                    <path d="M 428 320 Q 440 310 452 320 Q 440 330 428 320" class="diagram-solid" />
+                    <text x="440" y="355" class="diagram-text" font-size="10" text-anchor="middle">Observability</text>
+                </svg>
+            </div>
+        </div>
+
+        <div class="content-container">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('beginner')">The Notes</button>
+                <button class="tab-btn" onclick="switchTab('workflow')">How It Works</button>
+                <button class="tab-btn" onclick="switchTab('codebase')">Codebase Deep Dive</button>
+                <button class="tab-btn" onclick="switchTab('maang')">Interview Q&A</button>
+                <button class="tab-btn" onclick="switchTab('docs')">Documentation</button>
+            </div>
+
+            <!-- THE NOTES TAB -->
+            <div id="beginner" class="tab-content active">
+                <div class="section reveal-up">
+                    <h2>What is this project?</h2>
+                    <p>Imagine you run a restaurant, but instead of human chefs, you have a team of incredibly smart robot chefs. They need to cook a complex meal (fix a bug in software) without your constant supervision.</p>
+                    <div class="analogy">This project builds a "Virtual Engineering Team" using AI. Instead of asking ChatGPT one question at a time, we create different AI "Agents" with specific job titles, put them in a room, and tell them to solve a problem together.</div>
+                </div>
+
+                <div class="section">
+                    <h2 class="reveal-up">Meet the Virtual Team</h2>
+                    <p class="reveal-up reveal-delay-1">We use a framework called <strong>CrewAI</strong> to manage our team. Here are the specialized workers that make the autonomous workflow possible:</p>
+                    <div class="inline-illustration reveal-up reveal-delay-2">
+                        <svg viewBox="0 0 800 150" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg">
+                            <line x1="150" y1="75" x2="220" y2="75" class="diagram-solid" marker-end="url(#arrow)" stroke-dasharray="4 4"/>
+                            <line x1="350" y1="75" x2="420" y2="75" class="diagram-solid" marker-end="url(#arrow)" stroke-dasharray="4 4"/>
+                            <line x1="550" y1="75" x2="620" y2="75" class="diagram-solid" marker-end="url(#arrow)" stroke-dasharray="4 4"/>
+                            
+                            <rect x="30" y="45" width="120" height="60" rx="30" class="diagram-solid" fill="var(--card-bg)" />
+                            <text x="90" y="80" class="diagram-text" text-anchor="middle" font-size="14" style="opacity:1;">Manager</text>
+
+                            <rect x="230" y="45" width="120" height="60" rx="8" class="diagram-solid" fill="var(--card-bg)" />
+                            <text x="290" y="80" class="diagram-text" text-anchor="middle" font-size="14" style="opacity:1;">Explorer</text>
+
+                            <rect x="430" y="45" width="120" height="60" rx="8" class="diagram-solid" fill="var(--card-bg)" />
+                            <text x="490" y="80" class="diagram-text" text-anchor="middle" font-size="14" style="opacity:1;">Coder</text>
+
+                            <rect x="630" y="45" width="120" height="60" rx="8" class="diagram-solid" fill="var(--card-bg)" />
+                            <text x="690" y="80" class="diagram-text" text-anchor="middle" font-size="14" style="opacity:1;">Tester</text>
+                        </svg>
+                    </div>
+
+                    <div class="team-grid">
+                        <div class="team-member reveal-up">
+                            <svg class="team-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <div>
+                                <h3>1. The Explorer (Scout)</h3>
+                                <p><strong>Role:</strong> Look around the folders and read the files.</p>
+                                <p>AI doesn't automatically know what files you have. This agent reads the blueprint before anyone starts building.</p>
+                            </div>
+                        </div>
+                        <div class="team-member reveal-up reveal-delay-1">
+                            <svg class="team-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 20h9"/>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                            </svg>
+                            <div>
+                                <h3>2. The Coder (Builder)</h3>
+                                <p><strong>Role:</strong> Write and edit the code.</p>
+                                <p>Once the Explorer finds the problem, the Coder physically "types" out the fix and saves the file.</p>
+                            </div>
+                        </div>
+                        <div class="team-member reveal-up reveal-delay-2">
+                            <svg class="team-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                            <div>
+                                <h3>3. The Tester (QA)</h3>
+                                <p><strong>Role:</strong> Run the software and verify.</p>
+                                <p>A coder can claim they fixed it, but the tester proves it by running automated tests in an isolated sandbox.</p>
+                            </div>
+                        </div>
+                        <div class="team-member reveal-up reveal-delay-3">
+                            <svg class="team-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                            <div>
+                                <h3>4. The Manager (Boss)</h3>
+                                <p><strong>Role:</strong> Delegate and review.</p>
+                                <p>The manager assigns the reading, the writing, and the testing, ensuring the overall objective is met.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section reveal-up">
+                    <h2>The Safety Net (Human-in-the-Loop)</h2>
+                    <p>Allowing AI to write and execute code on your computer is like letting a robot swing a hammer in your house. It is powerful, but inherently dangerous.</p>
+                    <div class="inline-illustration" style="max-width: 600px;">
+                        <svg viewBox="0 0 500 180" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="20" y="60" width="100" height="60" rx="8" class="diagram-solid" fill="var(--card-bg)" />
+                            <text x="70" y="95" class="diagram-text" text-anchor="middle" style="opacity:1;">AI Agent</text>
+                            <line x1="120" y1="90" x2="200" y2="90" class="diagram-solid" marker-end="url(#arrow)" />
+                            
+                            <rect x="210" y="40" width="80" height="100" rx="4" class="diagram-solid" fill="var(--card-bg)" stroke-width="2"/>
+                            <path d="M 235 70 L 250 60 L 265 70 L 265 90 C 265 105 250 115 250 115 C 250 115 235 105 235 90 Z" class="diagram-solid" />
+                            <circle cx="250" cy="85" r="4" class="diagram-solid" />
+                            <line x1="250" y1="89" x2="250" y2="98" class="diagram-solid" />
+                            <text x="250" y="160" class="diagram-text" text-anchor="middle" font-weight="bold" style="opacity:1;">Approval Interceptor</text>
+                            
+                            <path d="M 250 40 L 250 10 L 360 10" class="diagram-solid" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+                            <text x="310" y="25" class="diagram-text" text-anchor="middle" fill="#d9534f" style="opacity:1;">HookAborted</text>
+                            <line x1="290" y1="90" x2="370" y2="90" class="diagram-solid" marker-end="url(#arrow)" />
+                            <rect x="380" y="60" width="100" height="60" rx="8" class="diagram-solid" fill="var(--card-bg)" />
+                            <text x="430" y="95" class="diagram-text" text-anchor="middle" style="opacity:1;">Sandbox / OS</text>
+                        </svg>
+                    </div>
+                    <p>To prevent chaos, this project uses a <strong>Gated Approval Hook</strong>. Before the AI is allowed to save a file or run a command, a prompt pauses execution to ask a human: <em>"Approve this action? [Yes/No]"</em>. If denied, the execution is abruptly aborted at the framework level via a <code>HookAborted</code> exception, ensuring absolute safety.</p>
+                </div>
+            </div>
+
+            <!-- MAANG INTERVIEW TAB -->
+            <div id="maang" class="tab-content">
+                
+                <div id="maang-lock" class="password-screen reveal-up">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 1rem;">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <h3>Admin Access Required</h3>
+                    <p>This section contains proprietary MAANG interview content.</p>
+                    <div class="password-input-group">
+                        <input type="password" id="maang-password" class="password-input" placeholder="Enter password..." onkeydown="if(event.key === 'Enter') checkPassword()">
+                        <button class="password-btn" onclick="checkPassword()">Unlock</button>
+                    </div>
+                    <div id="password-error" class="password-error">Incorrect password. Please try again.</div>
+                </div>
+
+                <div id="maang-content" style="display: none;">
+                    <div class="section reveal-up">
+                        <h2>Top-Level Interview Questions</h2>
+                    <p>If you were discussing this architecture in a Staff/Senior Engineering interview at a top tech company, these are the questions you would face, paired with top-tier technical responses.</p>
+                </div>
+                
+                <div class="interview-block">
+                    <div class="interview-image reveal-img-container"><img src="./assets/illus_step4.png" alt="Robots collaborating" class="reveal-img"></div>
+                    <div class="interview-content reveal-up">
+                        <span class="tag-small">System Design & Architecture</span>
+                        <h3>1. Why use a multi-agent system instead of a single LLM with tools?</h3>
+                        <p class="response-label">Response:</p>
+                        <p>"A single LLM agent suffers from context degradation and objective drift when handling complex, multi-step tasks. By utilizing a multi-agent architecture via CrewAI, we implement the <em>Separation of Concerns</em> pattern at the cognitive level."</p>
+                        <p>"We decouple the 'reading' context from the 'writing' context. If one agent does everything, its prompt context window becomes saturated with file reads, causing it to hallucinate or forget the core objective. By explicitly defining an Explorer, Coder, and Tester, each agent has a strictly bounded context and a specialized system prompt. A Manager agent acts as a semantic router, delegating tasks and acting as a verification loop. This drastically reduces hallucination rates and increases determinism."</p>
+                    </div>
+                </div>
+
+                <div class="interview-block">
+                    <div class="interview-image reveal-img-container"><img src="./assets/illus_step1.png" alt="Marionette and Ruler" class="reveal-img"></div>
+                    <div class="interview-content reveal-up">
+                        <span class="tag-small">Security & Sandboxing</span>
+                        <h3>2. How did you secure the environment against malicious execution?</h3>
+                        <p class="response-label">Response:</p>
+                        <p>"Executing LLM-generated code is inherently a remote code execution (RCE) vulnerability. To mitigate this, I implemented a defense-in-depth strategy with two primary layers."</p>
+                        <p>"First, I utilized <strong>E2B (Ephemeral 2 Sandbox)</strong> for isolated execution. The Tester agent does not run commands on the host machine; it runs them inside an ephemeral, containerized micro-VM."</p>
+                        <p>"Second, I implemented a <strong>Control Plane Interceptor</strong> using a strict Human-in-the-Loop (HITL) gate. When high-risk tools are invoked, the hook intercepts the payload and blocks the thread. Crucially, if approval is denied, the system raises a `HookAborted` exception, forcibly aborting the execution at the framework level rather than just asking the LLM nicely."</p>
+                    </div>
+                </div>
+
+                <div class="interview-block">
+                    <div class="interview-image reveal-img-container"><img src="./assets/illus_step3.png" alt="Data Line Chart" class="reveal-img"></div>
+                    <div class="interview-content reveal-up">
+                        <span class="tag-small">State Management & Resilience</span>
+                        <h3>3. How do you handle scenarios where the Tester reports a failure?</h3>
+                        <p class="response-label">Response:</p>
+                        <p>"The workflow isn't a linear DAG; it's a feedback loop. When the Tester agent runs the test suite via the sandbox, the `stdout` and `stderr` (e.g., the Pytest traceback) are returned."</p>
+                        <p>"The Manager evaluates this result. Because the objective explicitly states 'iterate until green', a test failure triggers a state transition back to the Coder agent. Furthermore, by utilizing short-term memory embeddings, the Coder remembers its previous failed attempts, preventing infinite loops of identical incorrect changes."</p>
+                    </div>
+                </div>
+
+                <div class="interview-block">
+                    <div class="interview-image reveal-img-container"><img src="./assets/illus_step2.png" alt="Person working with a rising gauge" class="reveal-img"></div>
+                    <div class="interview-content reveal-up">
+                        <span class="tag-small">Scalability</span>
+                        <h3>4. How would you scale this to a monorepo?</h3>
+                        <p class="response-label">Response:</p>
+                        <p>"Currently, the Explorer uses raw directory reading, which has an $O(N)$ complexity regarding token usage and would quickly exceed the LLM context limit. To scale, we must move from <em>read-based</em> discovery to <em>search-based</em> discovery."</p>
+                        <p>"I would implement three systems: <strong>1. Semantic Search (RAG):</strong> Embed the codebase using a vector database. <strong>2. AST Indexing:</strong> Provide tools like LSIF so the agent can accurately find function definitions. <strong>3. Chunked Editing:</strong> Instead of overwriting entire files, I would provide a `patch` tool, allowing the Coder to mutate only specific lines, vastly reducing generation latency."</p>
+                    </div>
+                </div>
+
+                <div class="interview-block">
+                    <div class="interview-image reveal-img-container"><img src="./assets/illus_step5.png" alt="Scales of Justice" class="reveal-img"></div>
+                    <div class="interview-content reveal-up">
+                        <span class="tag-small">Behavioral & Debugging</span>
+                        <h3>5. Tell me about a time this project failed and how you debugged it.</h3>
+                        <p class="response-label">Response:</p>
+                        <p>"During development, I noticed the Human-in-the-Loop permission layer was failing to block unauthorized actions. The agent proceeded even when I typed 'no'. It looked like an LLM hallucination—as if the model was ignoring the 'denied' response."</p>
+                        <p>"Instead of prompting the model harder, I dug into the framework's internal execution state. I discovered a bug in the `@before_tool_call` hook: the code simply used `return False`. However, returning a boolean does not halt the thread; the framework expects a hard exception to short-circuit the execution stack. I fixed this by raising the framework's native `HookAborted` exception. This reinforced my core philosophy: Treat the LLM as an unreliable runtime environment, and build safety gates in deterministic code."</p>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- DOCUMENTATION TAB -->
+            <div id="docs" class="tab-content">
+                
+                <div class="section reveal-up">
+                    <h2>🏗️ The 6-Layer Architecture</h2>
+                    <p>CodeHarness replaces a fragile while-loop with a robust, six-layer architecture designed for production-level AI engineering.</p>
+                    
+                    <ul class="layer-list">
+                        <li class="layer-item reveal-up">
+                            <h3>Core Loop</h3>
+                            <p>The fundamental Task → Tool → Result execution cycle, orchestrated cleanly by the CrewAI engine.</p>
+                        </li>
+                        <li class="layer-item reveal-up reveal-delay-1">
+                            <h3>Tools Layer</h3>
+                            <p>Provides agents with native, deterministic access to read/write files and execute sandboxed shell commands.</p>
+                        </li>
+                        <li class="layer-item reveal-up reveal-delay-2">
+                            <h3>Planning Engine</h3>
+                            <p>A strategic roadmap generated <em>before</em> coding begins, preventing "context rot" during execution.</p>
+                        </li>
+                        <li class="layer-item reveal-up">
+                            <h3>Subagent Delegation</h3>
+                            <p>A semantic routing Manager delegates discrete tasks to specialists (Explorer, Coder, Tester) to drastically save context space.</p>
+                        </li>
+                        <li class="layer-item reveal-up reveal-delay-1">
+                            <h3>Sandboxing (E2B)</h3>
+                            <p>Untrusted LLM code and test suites execute inside an isolated, containerized micro-VM (E2B), protecting the host machine.</p>
+                        </li>
+                        <li class="layer-item reveal-up reveal-delay-2">
+                            <h3>Memory & Checkpointing</h3>
+                            <p>Long-term embeddings persist facts across sessions, allowing the agent to survive interruptions and remember past failures.</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="section reveal-up">
+                    <h2>💻 Tech Stack</h2>
+                    <p>CodeHarness is built on the most cutting-edge orchestration and sandboxing technologies available.</p>
+                    
+                    <div class="tech-grid">
+                        <div class="tech-card">
+                            <div class="tech-icon">🤖</div>
+                            <h3>CrewAI</h3>
+                            <p>Multi-agent orchestration, delegation, and role-based execution framework.</p>
+                        </div>
+                        <div class="tech-card tech-delay-1">
+                            <div class="tech-icon">📦</div>
+                            <h3>E2B (Sandbox)</h3>
+                            <p>Secure, isolated cloud micro-VMs designed specifically for untrusted LLM code execution.</p>
+                        </div>
+                        <div class="tech-card tech-delay-2">
+                            <div class="tech-icon">⚡</div>
+                            <h3>uv</h3>
+                            <p>Blazing fast Python package manager and project resolver built in Rust.</p>
+                        </div>
+                        <div class="tech-card tech-delay-3">
+                            <div class="tech-icon">🧠</div>
+                            <h3>LiteLLM</h3>
+                            <p>Unified I/O interface to call Anthropic, OpenAI, or any models via OpenRouter.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="reveal-up">🚀 Quick Start</h2>
+                    <p class="reveal-up reveal-delay-1">Follow these steps to deploy your autonomous CodeHarness locally.</p>
+
+                    <div class="reveal-up reveal-delay-2">
+                        <h3>1. Installation</h3>
+                        <p>Clone the repository and initialize the environment using <code>uv</code> (for ultra-fast dependency resolution):</p>
+                        <div class="code-block">
+                            <code>uv sync</code><br>
+                            <span class="comment"># Alternatively: pip install crewai[tools,litellm] crewai-tools[e2b] python-dotenv pytest</span>
+                        </div>
+                    </div>
+
+                    <div class="reveal-up">
+                        <h3>2. Configuration</h3>
+                        <p>Duplicate the environment template and securely add your API keys:</p>
+                        <div class="code-block">
+                            <code>copy env.example .env</code>
+                        </div>
+                        <p>Inside <code>.env</code>, configure your providers:</p>
+                        <div class="code-block">
+                            <code>MODEL="openrouter/anthropic/claude-sonnet-4-6"</code><br>
+                            <code>OPENROUTER_API_KEY="sk-or-v1-..."</code><br>
+                            <code>E2B_API_KEY="e2b_..."</code><br>
+                            <code>OPENAI_API_KEY="sk-..." <span class="comment"># Used for embeddings & memory</span></code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section reveal-up">
+                    <h2>🛠️ The Demo Task</h2>
+                    <p>Inside the <code>Workspace/</code> directory, you'll find a buggy banking implementation (<code>account.py</code>) and a test suite (<code>tests/test_account.py</code>).</p>
+                    
+                    <div class="analogy">
+                        <strong>The Problem:</strong> The code currently hides 2 critical bugs resulting in failing tests:<br>
+                        1. Withdrawals can overdraw an account past zero.<br>
+                        2. Transfers do not properly credit the recipient's account.
+                    </div>
+
+                    <p>To execute the autonomous agent to solve this:</p>
+                    <div class="code-block reveal-up reveal-delay-1">
+                        <code>uv run python code_harness.py</code>
+                    </div>
+                    <p class="reveal-up reveal-delay-2">Watch in real-time as the AI Engineering Lead delegates to the Explorer to read the codebase, instructs the Coder to implement exact line fixes, and commands the Tester to run <code>pytest</code> inside the E2B sandbox. The swarm will iterate autonomously until all 5 tests pass.</p>
+                </div>
+
+                <div class="section reveal-up">
+                    <h2>🛡️ Safety First</h2>
+                    <p>If you are building agents, remember a core law of AI Engineering: <strong>Prompts are not safeguards. Sandboxes and Interceptors are.</strong></p>
+                    <p>CodeHarness forces all untrusted code execution through E2B, ensuring your host machine remains pristine. Furthermore, it employs a <strong>Human-in-the-Loop hook</strong> (<code>@before_tool_call</code>) that requires explicit human approval via stdin before any high-risk file writes or system executions. If denied, it uses a deterministic <code>HookAborted</code> exception to halt the agent stack immediately.</p>
+                </div>
+            </div>
+
+            <!-- HOW IT WORKS TAB -->
+            <div id="workflow" class="tab-content">
+                <div class="section reveal-up">
+                    <h2>The Interactive Workflow</h2>
+                    <p>Experience exactly how CodeHarness runs autonomously on your machine, from initialization to secure testing.</p>
+                </div>
+
+                <div class="terminal-window reveal-up reveal-delay-1">
+                    <div class="terminal-header">
+                        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                        <span class="terminal-title">codeharness ~ python</span>
+                    </div>
+                    <div class="terminal-body">
+                        <p class="type-anim-1"><span class="cmd">$</span> uv sync</p>
+                        <p class="type-anim-2"><span class="sys">✔</span> Dependencies resolved via cache.</p>
+                        <p class="type-anim-3" style="margin-top: 1.5rem;"><span class="cmd">$</span> uv run python code_harness.py</p>
+                        <p class="type-anim-4" style="color: #f1fa8c;">[Manager] Initiating autonomous session. Delegating task to Explorer...</p>
+                    </div>
+                </div>
+
+                <div class="pipeline-container">
+                    <div class="pipeline-step reveal-up">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Initialization & Discovery</h3>
+                            <p>The system connects to OpenRouter and E2B via your `.env` keys. The Manager Agent parses the problem and dispatches the <strong>Explorer</strong> to read `account.py` using its native file-read tools.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="pipeline-step reveal-up">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Contextual Coding</h3>
+                            <p>With perfect context loaded into its memory, the <strong>Coder</strong> agent computes the fix. It determines exactly which lines need mutation to resolve the bug, without rewriting the entire file or hallucinating new variables.</p>
+                        </div>
+                    </div>
+
+                    <div class="pipeline-step step-alert reveal-up">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>The Interceptor (You)</h3>
+                            <p>The Coder attempts to save the mutation to your local disk. <strong>Execution immediately freezes.</strong> The framework prompts you: <code style="background: rgba(0,0,0,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); font-family: var(--font-mono);">Approve write to account.py? [y/N]</code>. The agent cannot proceed until you grant manual authorization.</p>
+                        </div>
+                    </div>
+
+                    <div class="pipeline-step reveal-up">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Sandboxed Verification</h3>
+                            <p>Once authorized, the code is updated. The <strong>Tester</strong> takes over, instantly spinning up an ephemeral E2B cloud sandbox. It injects the codebase and securely runs `pytest`. If it fails, the trace is sent back to the Manager for a new iteration. If it passes, the task is complete.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section reveal-up" style="margin-top: 8rem;">
+                    <h2>A Real-World Example (For Beginners)</h2>
+                    <p>To truly understand how smart the agents are, let's look at the actual code bug they fix in the demo, explained simply.</p>
+                    
+                    <div class="example-container reveal-up reveal-delay-1">
+                        <div class="example-box broken">
+                            <div class="example-header">❌ The Broken Code (Before)</div>
+                            <div class="code-block" style="margin: 0; border-radius: 0; box-shadow: none;">
+                                <code>def withdraw(self, amount):<br>&nbsp;&nbsp;&nbsp;&nbsp;self.balance -= amount</code>
+                            </div>
+                            <div class="example-explanation">
+                                <strong>Beginner Translation:</strong> The code blindly subtracts money from your account. It's like a broken ATM that lets you withdraw $1,000 even if you only have $50 in your account!
+                            </div>
+                        </div>
+
+                        <svg class="example-arrow" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+
+                        <div class="example-box fixed">
+                            <div class="example-header">✅ The Agent's Fix (After)</div>
+                            <div class="code-block" style="margin: 0; border-radius: 0; box-shadow: none;">
+                                <code>def withdraw(self, amount):<br>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#50fa7b;">if amount > self.balance:</span><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#50fa7b;">raise ValueError("No funds")</span><br>&nbsp;&nbsp;&nbsp;&nbsp;self.balance -= amount</code>
+                            </div>
+                            <div class="example-explanation">
+                                <strong>Beginner Translation:</strong> The AI automatically spots the problem and adds a safety check (the green text). Now, the ATM checks your balance first, and stops the transaction if you don't have enough money.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CODEBASE DEEP DIVE TAB -->
+            <div id="codebase" class="tab-content">
+                <div class="section reveal-up">
+                    <h2>Codebase Architecture & Line-by-Line Breakdown</h2>
+                    <p>A comprehensive, granular deep dive into the Python backend. This guide explains the psychological and architectural reasoning behind every significant line of code in the project, preparing you to defend it in an intense technical interview.</p>
+                </div>
+
+                <div class="section" style="margin-top: 3rem;">
+                    <div class="interview-block reveal-up" style="display: block; margin-bottom: 5rem;">
+                        <div class="tag-small">Core Engine</div>
+                        <h3 style="font-family: var(--font-serif); font-size: 2.2rem; margin-top: 1rem; color: var(--text-main);">1. <code>code_harness.py</code></h3>
+                        <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 2rem;">The primary execution engine. It configures the language model, tools, the Agent swarm, and enforces the crucial human-in-the-loop safety interceptor.</p>
+                        
+                        <h4 style="margin-top: 3rem;">1.1 Imports & Environment setup</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>import os<br>
+                            from dotenv import load_dotenv<br>
+                            load_dotenv()<br>
+                            from crewai import LLM, Agent, Crew, Process, Task<br>
+                            from crewai_tools import DirectoryReadTool, FileReadTool, FileWriterTool</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> Environment variables (API keys for Claude, OpenAI, E2B) must never be hardcoded. <code>python-dotenv</code> safely loads them from a local <code>.env</code> file that is <code>.gitignore</code>d. We import <code>CrewAI</code> because it provides native support for hierarchical orchestration (Manager delegating to workers) and advanced tool handling.</p>
+
+                        <h4 style="margin-top: 3rem;">1.2 Model Selection (The Brain)</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>MODEL = os.getenv("MODEL", "openrouter/anthropic/claude-sonnet-4-6")<br>
+                            llm = LLM(model=MODEL)</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> Instead of locking the application into a single vendor (like OpenAI), we route the LLM request through <strong>OpenRouter</strong>. This allows us to instantly swap models (e.g., from GPT-4o to Claude 3.5 Sonnet) just by changing the <code>.env</code> file. Claude 3.5 Sonnet is specifically chosen here because it currently leads industry benchmarks in zero-shot coding tasks.</p>
+
+                        <h4 style="margin-top: 3rem;">1.3 Generic File Tools (The Hands)</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>read_file = FileReadTool()<br>
+                            write_file = FileWriterTool()<br>
+                            list_dir = DirectoryReadTool()<br>
+                            filesystem_tools = [read_file, write_file, list_dir]</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> These are native CrewAI tools. By explicitly isolating <code>read</code> tools from <code>write</code> tools, we can grant agents the Principle of Least Privilege (e.g., the Explorer only gets read tools, so it is physically impossible for it to accidentally delete code while scouting).</p>
+
+                        <h4 style="margin-top: 3rem;">1.4 E2B Sandbox Integration (The Cloud Container)</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>sandbox_tools = []<br>
+                            exec_tool = None<br>
+                            if os.getenv("E2B_API_KEY"):<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;from crewai_tools import E2BExecTool, E2BPythonTool<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;exec_tool = E2BExecTool()<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;sandbox_tools = [exec_tool, E2BPythonTool()]</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> This is the most impressive architectural feature. Allowing an AI to execute arbitrary code on a host machine is a massive security risk. We integrate <code>E2B</code>, which dynamically spins up ephemeral, isolated micro-VMs in the cloud. If the AI hallucinates a destructive <code>rm -rf /</code> command, it only destroys a disposable cloud container, protecting the host machine perfectly. The <code>if</code> statement elegantly disables this if the API key is missing.</p>
+
+                        <h4 style="margin-top: 3rem;">1.5 The Custom Test Wrapper</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>@tool("run_tests")<br>
+                            def run_tests(path: str = "tests/") -&gt; str:<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;"""Run the pytest suite at the given path inside the sandbox and return the result."""<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;return exec_tool.run(command=f"pytest {path} -q")<br>
+                            custom_tools = [run_tests]</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> LLMs struggle with open-ended "execute terminal commands" tools because the state space is infinite. By wrapping the generic <code>exec_tool</code> into a highly specific <code>run_tests</code> tool with strict parameters, we significantly constrain the AI's action space. It can only execute <code>pytest</code>, and it automatically routes execution through the E2B sandbox.</p>
+
+                        <h4 style="margin-top: 3rem;">1.6 Defining the Swarm (Agents)</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>explorer = Agent(<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;role="Codebase Explorer",<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;goal="Map the repository and surface the files relevant to the task.",<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;backstory="You never guess at file contents -- you read them.",<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;tools=[read_file, list_dir],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;llm=llm<br>
+                            )<br><br>
+                            coder = Agent(<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;role="Software Engineer",<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;goal="Implement the requested change by editing files on disk.",<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;tools=filesystem_tools + sandbox_tools,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;reasoning=True,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;llm=llm<br>
+                            )</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> In agentic systems, the <code>backstory</code> serves as the crucial System Prompt tuning reliability. <br><br>
+                        - <strong>Explorer:</strong> Gets only read tools. Its job is to build a massive context window of the current code state without mutating anything.<br>
+                        - <strong>Coder:</strong> Gets write tools and sandbox tools. Crucially, <code>reasoning=True</code> is enabled. This acts as a Chain-of-Thought forcing function. The Coder must explicitly draft a reasoning plan ("I will edit line 23 because...") before it is allowed to execute the <code>write_file</code> tool, drastically reducing careless hallucinations.</p>
+
+                        <h4 style="margin-top: 3rem;">1.7 The Orchestrator (Manager)</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>manager = Agent(<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;role="Engineering Lead",<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;goal="Break the request into steps and delegate each to the right specialist.",<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;llm=llm,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;allow_delegation=True<br>
+                            )</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> The manager is the router. <code>allow_delegation=True</code> enables the hierarchical swarm. The manager never writes code; it reads the Task objective, assigns the Explorer to scout, reviews the Explorer's output, commands the Coder to execute, and commands the Tester to verify. If the Tester returns an error trace, the Manager routes the failure back to the Coder for another iteration.</p>
+
+                        <h4 style="margin-top: 3rem;">1.8 The Safety Interceptor (Human-in-the-Loop)</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>from crewai.hooks import before_tool_call, HookAborted<br>
+                            GATED_TOOLS = {write_file.name, "run_tests", *(t.name for t in sandbox_tools)}<br><br>
+                            @before_tool_call<br>
+                            def require_approval(context):<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;if context.tool_name in GATED_TOOLS:<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;response = input(f"Approve {context.tool_name} with input {context.tool_input}? [yes/no] ")<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if response.strip().lower() != "yes":<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise HookAborted(reason="User denied tool execution", source="require_approval")</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> This is arguably the most critical code block in the entire project. LLMs are non-deterministic; they can and will go rogue. System prompts ("Do not delete files") are mere suggestions to a neural net. <strong>Prompts are not safeguards.</strong> <br><br>We define a set of <code>GATED_TOOLS</code> (anything that mutates disk or executes code). The <code>@before_tool_call</code> hook intercepts the execution <em>after</em> the LLM decides to call it, but <em>before</em> the code actually runs. Execution is suspended, and the human is prompted via <code>stdin</code>. If the human types "no", we raise a deterministic <code>HookAborted</code> python exception. This completely bypasses the LLM's non-determinism, forcing a hard halt. It represents true enterprise-grade AI safety.</p>
+
+                        <h4 style="margin-top: 3rem;">1.9 Crew Instantiation & Memory</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>crew = Crew(<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;agents=[explorer, coder, tester],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;tasks=[task],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;manager_agent=manager,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;process=Process.hierarchical,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;planning=True,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;planning_llm=LLM(model="openrouter/openai/gpt-4o-mini"),<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;memory=True,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;checkpoint=True<br>
+                            )</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> <br>
+                        - <code>Process.hierarchical</code> turns the array of agents into a managed swarm rather than a sequential list.<br>
+                        - <code>planning=True</code> injects an AgentPlanner that writes a step-by-step logical plan <em>before</em> the execution loop begins. We use <code>gpt-4o-mini</code> for this specifically because planning requires deep reasoning but not heavy coding, making it highly cost-effective.<br>
+                        - <code>memory=True</code> enables cross-session embeddings (RAG), meaning the swarm remembers facts from previous runs.<br>
+                        - <code>checkpoint=True</code> allows the state to serialize to disk, so if a run crashes, it resumes from the checkpoint instead of starting over.</p>
+                    </div>
+
+                    <div class="interview-block reveal-up" style="display: block; margin-bottom: 5rem;">
+                        <div class="tag-small">Target Application</div>
+                        <h3 style="font-family: var(--font-serif); font-size: 2.2rem; margin-top: 1rem; color: var(--text-main);">2. <code>Workspace/account.py</code></h3>
+                        <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 2rem;">The target codebase representing the buggy banking application. The AI is challenged to find and resolve semantic logic errors within this object-oriented structure.</p>
+                        
+                        <h4 style="margin-top: 3rem;">2.1 Custom Exceptions</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>class InsufficientFunds(Exception):<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;pass</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> When designing enterprise backend logic, relying on generic <code>Exception</code> or <code>ValueError</code> for everything is an anti-pattern. By creating custom exceptions like <code>InsufficientFunds</code>, downstream services (like a web API) can catch exactly what went wrong and return precise HTTP 400 status codes. The AI must understand this to fix the code properly.</p>
+
+                        <h4 style="margin-top: 3rem;">2.2 Object-Oriented State</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>class BankAccount:<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;def __init__(self, owner, balance=0):<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.owner = owner<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.balance = balance<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.history = []</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> This demonstrates clean encapsulation. The state (balance, history ledger) is tightly bound to the object instance. The AI must realize that it cannot mutate <code>self.balance</code> without also appending a record to <code>self.history</code>, testing its ability to handle multi-step state mutations.</p>
+
+                        <h4 style="margin-top: 3rem;">2.3 The Business Logic & Bugs</h4>
+                        <div class="code-block" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                            <code>def withdraw(self, amount):<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;if amount &lt;= 0:<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise ValueError("amount must be positive")<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;if amount &gt; self.balance:<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise InsufficientFunds("insufficient funds")<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;self.balance -= amount<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;self.history.append(("withdraw", amount))</code>
+                        </div>
+                        <p><strong>Thought Process:</strong> The original bug in the demo omitted the boundary check <code>if amount > self.balance</code>, meaning accounts could be overdrawn into negatives. The AI Coder is challenged to contextually insert this specific boundary check and raise the custom exception without breaking the ledger appending mechanism below it.</p>
+                    </div>
+
+                    <div class="interview-block reveal-up" style="display: block; margin-bottom: 4rem;">
+                        <div class="tag-small">Verification Layer</div>
+                        <h3 style="font-family: var(--font-serif); font-size: 2.2rem; margin-top: 1rem; color: var(--text-main);">3. <code>Workspace/tests/test_account.py</code></h3>
+                        <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 2rem;">The deterministic <code>pytest</code> suite. This acts as the absolute source of truth that prevents the AI from hallucinating a successful fix.</p>
+                        
+                        <p><strong>Thought Process:</strong> Explain Test-Driven Development (TDD) in the context of Autonomous AI. Large Language Models are known for "sycophancy" (agreeing with the user or claiming success when none exists). If the agent simply says "I fixed the bug," you cannot trust it. <br><br>
+                        By providing a test suite, you strip away the LLM's ability to lie. The orchestration loop commands the <code>Tester</code> agent to run <code>pytest</code> inside the E2B sandbox. The output trace (which is completely deterministic) is parsed by the Manager. If there are red failing tests, the Manager automatically routes the execution back to the Coder for another attempt. It will iterate relentlessly until the objective output is entirely green.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div> 
+    </div>
+
+    <div class="swipe-indicator">
+        <div class="swipe-icon">↓</div>
+        Scroll
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            // Restart the hero animations by forcing a DOM reflow via cloning
+            const heroLayout = document.querySelector('.hero-layout');
+            if (heroLayout) {
+                const newHero = heroLayout.cloneNode(true);
+                heroLayout.parentNode.replaceChild(newHero, heroLayout);
+            }
+
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Allow event target to be optional if called programmatically
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            }
+            
+            setTimeout(() => {
+                document.getElementById(tabId).classList.add('active');
+                observeElements(); 
+            }, 50);
+        }
+
+        function checkPassword() {
+            const input = document.getElementById('maang-password').value;
+            const error = document.getElementById('password-error');
+            const lock = document.getElementById('maang-lock');
+            const content = document.getElementById('maang-content');
+            
+            if (input === 'soubh#132') {
+                lock.style.display = 'none';
+                content.style.display = 'block';
+                setTimeout(observeElements, 50);
+            } else {
+                error.classList.add('visible');
+                setTimeout(() => error.classList.remove('visible'), 3000);
+            }
+        }
+
+        function observeElements() {
+            const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    } else {
+                        // Remove class when out of view to re-trigger animation on scroll
+                        entry.target.classList.remove('is-visible');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.reveal-up, .reveal-img, .analogy, .tech-card').forEach(el => {
+                observer.observe(el);
+            });
+        }
+
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const wm1 = document.getElementById('wm1');
+            const wm2 = document.getElementById('wm2');
+            
+            if(wm1) wm1.style.transform = `translateY(${scrolled * 0.15}px)`;
+            if(wm2) wm2.style.transform = `translateY(-${scrolled * 0.1}px)`;
+        });
+
+        document.addEventListener('DOMContentLoaded', observeElements);
+    </script>
+</body>
+</html>
