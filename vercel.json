@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "rewrites": [
+    { "source": "/", "destination": "/docs/interactive_notes.html" }
+  ]
+}
