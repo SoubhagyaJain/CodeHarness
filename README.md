@@ -116,8 +116,15 @@ CodeHarness/
 - Keep the UI layer in src/codeharness/ui
 - Add tests for new behavior whenever possible
 - Update documentation when setup or behavior changes
+## 📚 Documentation
 
-For more detailed development notes, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+For a deep dive into the system, please refer to our comprehensive documentation suite:
+
+- [🏛️ Architecture Overview](docs/ARCHITECTURE.md): Learn about the Streamlit UI, CrewAI Cognitive Layer, and Orchestrator.
+- [🤖 Agent Configuration](docs/AGENTS.md): Understand the Explorer, Coder, and Tester agents and their specific roles.
+- [🛡️ Safety & Execution Hooks](docs/SAFETY.md): How the Gated Approval Hook and dual-execution Sandbox keep your system safe.
+- [🚀 Usage Guide](docs/USAGE.md): Step-by-step instructions for running the Streamlit app and triggering a Swarm.
+- [🛠️ Development Guide](docs/DEVELOPMENT.md): Notes for contributing to the core package.
 
 ---
 
@@ -128,12 +135,6 @@ Run the test suite locally with:
 ```powershell
 pytest tests/test_smoke.py Workspace/tests -q
 ```
-
----
-
-## 🛡️ Safety notes
-
-This project is intended to be more controlled than a fully unrestricted agent loop. It uses isolated execution paths and review checkpoints to reduce the risk of unintended actions.
 
 ---
 

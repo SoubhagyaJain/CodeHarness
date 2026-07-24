@@ -300,139 +300,6 @@
         }
     
         </style>
-
-        <style>
-        /* Comprehensive Responsive Fixes */
-        @media (max-width: 768px) {
-            /* Agent Roster */
-            .agent-card {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                padding: 1.5rem 1rem;
-            }
-            .agent-avatar-wrap { margin-bottom: 0.5rem; }
-            .agent-tools { justify-content: center; }
-
-            /* Security Net */
-            .security-net-container { padding: 1.5rem 1rem; }
-            .sec-action-box { flex-direction: column; gap: 0.8rem; }
-            .sec-btn { width: 100%; margin: 0; }
-
-            /* Streamlit Demo Mobile Constraints */
-            .st-demo-wrapper {
-                flex-direction: column;
-                height: 85vh;
-                max-height: 700px;
-                width: 100%;
-                max-width: 100vw;
-            }
-            .st-demo-wrapper * {
-                box-sizing: border-box !important;
-            }
-            .st-main {
-                height: 100%;
-                width: 100%;
-                overflow: hidden;
-            }
-            .st-chat-history { 
-                overflow-x: hidden;
-                width: 100%;
-                padding: 1rem;
-                padding-bottom: 2rem;
-            }
-            .st-message {
-                width: 100%;
-                max-width: 100%;
-            }
-            .st-bubble {
-                max-width: 100%;
-                overflow-x: hidden;
-            }
-            .st-bubble, .st-agent-block, .st-alert, .ai-content-area, .st-input-text {
-                word-wrap: break-word !important;
-                overflow-wrap: anywhere !important;
-                word-break: break-word !important;
-                white-space: normal !important;
-            }
-            /* Explicitly break URLs */
-            .st-chat-history a { word-break: break-all !important; }
-            
-            /* Target injected flex containers to force wrapping */
-            .ai-content-area > div[style*="display:flex"],
-            .ai-content-area > div[style*="display: flex"] { 
-                flex-wrap: wrap !important; 
-            }
-            .ai-content-area > div { max-width: 100% !important; }
-            
-            .st-sidebar { display: none !important; }
-            .st-input-area {
-                padding: 0.8rem;
-                width: 100%;
-            }
-
-            /* IDE HUD */
-            .ide-hud {
-                flex-direction: column;
-                min-height: auto;
-            }
-            .ide-sidebar {
-                width: 100%;
-                border-right: none;
-                border-bottom: 1px solid #30363d;
-                padding: 1rem;
-                display: flex;
-                overflow-x: auto;
-                white-space: nowrap;
-            }
-            .ide-tree-header { display: none; }
-            .ide-file {
-                display: inline-block;
-                padding: 0.5rem 1rem;
-                margin-right: 0.5rem;
-            }
-            .ide-main {
-                padding: 1.5rem;
-                max-height: none;
-            }
-
-            /* Password Screen */
-            .password-input-group {
-                flex-direction: column;
-                width: 100%;
-                align-items: center;
-            }
-            .password-input { width: 100%; max-width: 300px; }
-            .password-btn { width: 100%; max-width: 300px; padding: 1rem; }
-
-            /* Documentation Tab */
-            .arch-layer {
-                flex-direction: column;
-                align-items: flex-start;
-                text-align: left;
-                padding: 1.5rem;
-            }
-            .arch-num {
-                align-self: flex-end;
-                margin-top: 1rem;
-            }
-            .qs-terminal { margin: 1.5rem 0; }
-            .qs-body { padding: 1rem; overflow-x: auto; }
-            .pillar-nav { flex-wrap: nowrap; overflow-x: auto; }
-        }
-
-        @media (max-width: 480px) {
-            .st-chat-history { padding: 1rem; }
-            .st-input-area { padding: 1rem; gap: 0.5rem; }
-            .st-header { padding: 1rem; font-size: 1.2rem; }
-            
-            .sec-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
-            .sec-title { font-size: 0.9rem; }
-
-            .qa-card { padding: 1rem; }
-            .qa-q { font-size: 1rem; }
-        }
-        </style>
 </head>
 <body>
     
@@ -1295,44 +1162,6 @@
                     
                     @keyframes fadeInIDE { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
                     
-                    @media (max-width: 768px) {
-                        .ide-hud {
-                            flex-direction: column;
-                            min-height: auto;
-                        }
-                        .ide-sidebar {
-                            width: 100%;
-                            border-right: none;
-                            border-bottom: 1px solid #30363d;
-                            padding: 1rem;
-                            display: flex;
-                            overflow-x: auto;
-                            white-space: nowrap;
-                        }
-                        .ide-tree-header { display: none; }
-                        .ide-file {
-                            display: inline-block;
-                            padding: 0.5rem 1rem;
-                            margin-right: 0.5rem;
-                        }
-                        .ide-file::before { margin-right: 0.4rem; }
-                        .ide-main {
-                            padding: 1.2rem;
-                            max-height: none;
-                            width: 100%;
-                            box-sizing: border-box;
-                        }
-                        .ide-snippet-code {
-                            padding: 1rem;
-                            font-size: 0.8rem;
-                        }
-                        .ide-thought {
-                            padding: 1rem;
-                            font-size: 0.9rem;
-                            border-left-width: 3px;
-                            margin-bottom: 1.5rem;
-                        }
-                    }
         </style>
 
                     <div class="ide-hud reveal-up">
@@ -1642,39 +1471,12 @@
                 .tech-card-adv h3 { margin-bottom: 0.5rem; font-family: var(--font-sans); }
                 .tech-card-adv p { font-size: 0.9rem; color: #555; line-height: 1.5; margin: 0;}
                 
-        /* Agent Grid */
-        .agent-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 3rem; }
-        .agent-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 10px 30px rgba(0,0,0,0.04); overflow: hidden; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .agent-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        .agent-header { padding: 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.06); display: flex; align-items: center; gap: 1rem; }
-        .agent-icon { font-size: 2rem; }
-        .agent-header h3 { margin: 0; font-size: 1.3rem; }
-        .agent-role { font-family: var(--font-mono); font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; display: block; margin-top: 0.3rem;}
-        .agent-body { padding: 1.5rem; font-size: 0.95rem; color: #555; line-height: 1.6; }
-        .agent-permissions { margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; font-family: var(--font-mono); font-size: 0.85rem; border-left: 4px solid var(--text-main); }
-
-        /* Safety Block */
-        .safety-block { background: linear-gradient(135deg, #0d1117, #161b22); border-radius: 16px; padding: 3rem; color: #c9d1d9; margin: 3rem 0; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid #30363d;}
-        .safety-block h2 { color: #fff; margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; font-weight: 500;}
-        .safety-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem; }
-        .safety-card { background: rgba(255,255,255,0.03); padding: 1.8rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: background 0.3s; }
-        .safety-card:hover { background: rgba(255,255,255,0.06); }
-        .safety-card h3 { color: #ff7b72; margin-top: 0; display: flex; align-items: center; gap: 0.5rem;}
-        .safety-card p { line-height: 1.6; color: #8b949e; }
-        
         /* Docs Specific Mobile Fixes */
         @media (max-width: 768px) {
             .arch-layer { padding: 1.5rem !important; flex-direction: column; text-align: left; align-items: flex-start; gap: 0.5rem; }
             .arch-num { position: absolute; top: 1rem; right: 1.5rem; font-size: 2.5rem !important; opacity: 0.1 !important; z-index: -1; }
             .arch-content p { max-width: 100% !important; font-size: 0.9rem !important; }
-            .qs-body { font-size: 0.85rem !important; padding: 1rem !important; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            .safety-grid { grid-template-columns: 1fr; }
-            .safety-block { padding: 1.5rem; margin: 1.5rem 0; }
-            .agent-grid { grid-template-columns: 1fr; gap: 1.5rem; }
-            .agent-card { padding: 1rem; }
-            .architecture-stack { margin: 1.5rem auto; }
-            .tech-grid-adv { grid-template-columns: 1fr; }
-            #docs { overflow-x: hidden; width: 100%; }
+            .qs-body { font-size: 0.85rem !important; padding: 1rem !important; }
         }
 
     </style>
@@ -1731,82 +1533,6 @@
                                 <p>E2B Cloud micro-VMs or Local Subprocess environments isolating malicious intent.</p>
                             </div>
                             <div class="arch-num">L6</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="section reveal-up">
-                    <h2>🤖 The Cognitive Layer: Swarm Configuration</h2>
-                    <p>Instead of relying on a monolithic prompt that hallucinates, CodeHarness delegates tasks to a specialized CrewAI Swarm. Each agent has strict operational bounds.</p>
-                    
-                    <div class="agent-grid">
-                        <div class="agent-card">
-                            <div class="agent-header">
-                                <div class="agent-icon">🔍</div>
-                                <div>
-                                    <h3>The Explorer</h3>
-                                    <span class="agent-role">Context Gatherer</span>
-                                </div>
-                            </div>
-                            <div class="agent-body">
-                                Maps the repository and surfaces relevant files. It is strictly forbidden from writing code. By forcing the system to read the disk first, we eliminate the AI's tendency to guess file structures.
-                                <div class="agent-permissions" style="border-left-color: #29b6f6;">
-                                    <strong>Permissions:</strong> Read-Only<br/>
-                                    (<code>read_file</code>, <code>list_dir</code>)
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="agent-card">
-                            <div class="agent-header">
-                                <div class="agent-icon">💻</div>
-                                <div>
-                                    <h3>The Coder</h3>
-                                    <span class="agent-role">Staff-Level Engineer</span>
-                                </div>
-                            </div>
-                            <div class="agent-body">
-                                Executes the actual modifications. Operates with internal chain-of-thought (<code>reasoning=True</code>) to plan its edits *before* it touches your files.
-                                <div class="agent-permissions" style="border-left-color: #ffb300;">
-                                    <strong>Permissions:</strong> Read & Write<br/>
-                                    (<code>write_file</code>)
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="agent-card">
-                            <div class="agent-header">
-                                <div class="agent-icon">🧪</div>
-                                <div>
-                                    <h3>The Tester</h3>
-                                    <span class="agent-role">Verification Engine</span>
-                                </div>
-                            </div>
-                            <div class="agent-body">
-                                Acts as the objective reality check. It runs test suites in the terminal and returns raw stdout/stderr traces to the manager to prove the code actually works.
-                                <div class="agent-permissions" style="border-left-color: #00c853;">
-                                    <strong>Permissions:</strong> Execution<br/>
-                                    (<code>run_tests</code>, <code>exec_tool</code>)
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="section reveal-up">
-                    <div class="safety-block">
-                        <h2>🛡️ Security & Execution Bounds</h2>
-                        <p style="color:#8b949e; font-size:1.1rem; max-width:80%;">Autonomous systems interacting with your filesystem are inherently risky. CodeHarness enforces human oversight through two primary mechanisms.</p>
-                        
-                        <div class="safety-grid">
-                            <div class="safety-card">
-                                <h3>🛑 Gated Approval Hook</h3>
-                                <p>We intercept tool executions <em>after</em> the LLM decides to use them, but <em>before</em> the code runs. Streamlit pauses the background thread and triggers a UI alert. If you click Deny, a <code>HookAborted</code> exception is thrown, teaching the AI that its action was blocked.</p>
-                            </div>
-                            <div class="safety-card">
-                                <h3>📦 Dual-Execution Sandbox</h3>
-                                <p>When the Tester agent runs <code>pytest</code>, CodeHarness decides where to run it. In <strong>Local Mode</strong>, it uses a local subprocess. If an <code>E2B_API_KEY</code> is provided, it instantly spins up a secure, ephemeral cloud Micro-VM to run the shell commands, fully air-gapping the AI.</p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1889,7 +1615,7 @@
             });
             
             // Allow event target to be optional if called programmatically
-            if (typeof event !== 'undefined' && event && event.target) {
+            if (event && event.target) {
                 event.target.classList.add('active');
             } else {
                 document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`).classList.add('active');
