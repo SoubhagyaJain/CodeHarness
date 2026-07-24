@@ -1,15 +1,10 @@
 {
-  "version": 2,
-  "builds": [
+  "buildCommand": "echo 'No build command needed'",
+  "outputDirectory": "docs",
+  "rewrites": [
     {
-      "src": "docs_site/**/*",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "^/$",
-      "dest": "/interactive_notes.html"
+      "source": "/",
+      "destination": "/interactive_notes.html"
     }
   ]
 }
