@@ -1,1 +1,15 @@
-{"rewrites": [{"source": "/", "destination": "/interactive_notes.html"}]}
+{
+  "version": 3,
+  "builds": [
+    {
+      "src": "**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "^/$",
+      "dest": "/interactive_notes.html"
+    }
+  ]
+}

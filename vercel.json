@@ -1,6 +1,15 @@
 {
   "version": 3,
-  "rewrites": [
-    { "source": "/", "destination": "/docs/interactive_notes.html" }
+  "builds": [
+    {
+      "src": "docs_site/**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "^/$",
+      "dest": "/interactive_notes.html"
+    }
   ]
 }
